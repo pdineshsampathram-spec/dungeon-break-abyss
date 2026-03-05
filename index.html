@@ -19,7 +19,43 @@ body{display:flex;align-items:center;justify-content:center}
 #atk-btn{position:absolute;border-radius:50%;background:rgba(239,68,68,.18);border:2px solid rgba(239,68,68,.55);pointer-events:all;touch-action:none;display:flex;align-items:center;justify-content:center;color:rgba(239,68,68,.9);user-select:none;font-family:'Cinzel',serif}
 #shoot-btn{position:absolute;border-radius:50%;background:rgba(52,211,153,.18);border:2px solid rgba(52,211,153,.55);pointer-events:all;touch-action:none;display:none;align-items:center;justify-content:center;color:rgba(52,211,153,.9);user-select:none}
 #special-btn{position:absolute;border-radius:50%;background:rgba(255,215,0,.25);border:2px solid gold;box-shadow:0 0 10px rgba(255,215,0,0.4);pointer-events:all;touch-action:none;display:none;align-items:center;justify-content:center;user-select:none;font-size:20px}
-/* ── Mobile Edit Mode ─────────────────────────────────────────── */
+/* ── In-Game Pause Button ─────────────────────────────────────────── */
+#ingame-pause-btn{
+  position:fixed;top:10px;right:10px;z-index:80;
+  width:44px;height:44px;border-radius:50%;
+  background:rgba(0,0,0,0.65);border:1.5px solid rgba(201,168,76,0.55);
+  display:none;align-items:center;justify-content:center;
+  font-size:18px;cursor:pointer;pointer-events:all;
+  color:#fde68a;touch-action:none;user-select:none;
+  transition:background .15s;
+}
+#ingame-pause-btn:active{ background:rgba(201,168,76,0.25); }
+/* ── In-Game Speed Panel ─────────────────────────────────────────── */
+#ingame-speed-panel{
+  position:fixed;top:62px;right:10px;z-index:80;
+  background:rgba(5,8,22,0.94);border:1.5px solid rgba(201,168,76,0.45);
+  border-radius:10px;padding:12px 16px;display:none;
+  color:#fde68a;font-family:'Cinzel',serif;font-size:11px;
+  min-width:160px;pointer-events:all;touch-action:none;
+}
+#ingame-speed-panel .sp-title{ font-weight:700;margin-bottom:8px;letter-spacing:.05em;color:#c9a84c; }
+#ingame-speed-panel .sp-row{ display:flex;align-items:center;gap:8px;margin-bottom:6px; }
+#ingame-speed-panel .sp-label{ color:#94a3b8;font-size:10px;width:50px; }
+.sp-btn{
+  flex:1;padding:5px 0;border:1px solid rgba(201,168,76,0.4);border-radius:5px;
+  background:rgba(201,168,76,0.1);color:#fde68a;font-family:'Cinzel',serif;
+  font-size:9px;font-weight:700;cursor:pointer;text-align:center;
+  transition:background .12s;touch-action:none;
+}
+.sp-btn.active{ background:rgba(201,168,76,0.35);border-color:rgba(201,168,76,0.8); }
+.sp-btn:active{ background:rgba(201,168,76,0.4); }
+.sp-resume-btn{
+  width:100%;margin-top:8px;padding:7px 0;
+  background:rgba(34,197,94,0.18);border:1px solid rgba(34,197,94,0.55);
+  border-radius:6px;color:#22c55e;font-family:'Cinzel',serif;font-size:10px;
+  font-weight:700;cursor:pointer;text-align:center;touch-action:none;
+}
+.sp-resume-btn:active{ background:rgba(34,197,94,0.35); }
 .ctrl-edit-mode #joy-zone,
 .ctrl-edit-mode #atk-btn,
 .ctrl-edit-mode #shoot-btn,
@@ -57,6 +93,18 @@ body{display:flex;align-items:center;justify-content:center}
   <div id="special-btn">✨<div class="ctrl-resize-handle" id="special-resize">⤡</div></div>
 </div>
 <div id="ctrl-edit-hint">✦ DRAG TO MOVE  •  DRAG ⤡ TO RESIZE  •  TAP DONE WHEN FINISHED ✦</div>
+<div id="ingame-pause-btn" title="Pause / Settings">⏸</div>
+<div id="ingame-speed-panel">
+  <div class="sp-title">⚡ GAME SPEED</div>
+  <div class="sp-row">
+    <span class="sp-label">Speed:</span>
+    <div class="sp-btn" data-spd="0.5">0.5×</div>
+    <div class="sp-btn" data-spd="1.0">1.0×</div>
+    <div class="sp-btn" data-spd="1.5">1.5×</div>
+    <div class="sp-btn" data-spd="2.0">2.0×</div>
+  </div>
+  <div class="sp-resume-btn" id="sp-resume-btn">▶ RESUME GAME</div>
+</div>
 <script>
 'use strict';
 
@@ -72,6 +120,27 @@ const CV = document.getElementById('c');
 const CX = CV.getContext('2d');
 const LW = 896, LH = 640;
 CV.width = LW; CV.height = LH;
+CV.style.touchAction = 'none';
+
+// ── Landscape/Portrait overlay ────────────────────────────────────────
+(function() {
+  const ov = document.createElement('div');
+  ov.id = 'rotate-overlay';
+  ov.style.cssText = 'position:fixed;inset:0;background:#000;z-index:9999;display:none;flex-direction:column;align-items:center;justify-content:center;color:#fde68a;font-family:Cinzel,serif;text-align:center;gap:16px;';
+  ov.innerHTML = '<div style="font-size:52px;animation:rotSpin 1.5s linear infinite">📱</div><div style="font-size:18px;font-weight:700;letter-spacing:.05em">ROTATE YOUR DEVICE</div><div style="font-size:12px;color:#94a3b8">Landscape mode required to play</div>';
+  const style = document.createElement('style');
+  style.textContent = '@keyframes rotSpin{0%{transform:rotate(0deg)}50%{transform:rotate(90deg)}100%{transform:rotate(90deg)}}';
+  document.head.appendChild(style);
+  document.body.appendChild(ov);
+  function checkOrientation() {
+    const portrait = window.matchMedia('(orientation:portrait)').matches;
+    const mobile = window.matchMedia('(max-width:900px),(pointer:coarse)').matches;
+    ov.style.display = (portrait && mobile) ? 'flex' : 'none';
+  }
+  window.addEventListener('orientationchange', checkOrientation);
+  window.addEventListener('resize', checkOrientation);
+  checkOrientation();
+})();
 
 function resizeCanvas() {
   const sw = window.innerWidth, sh = window.innerHeight;
@@ -83,6 +152,7 @@ function resizeCanvas() {
 }
 resizeCanvas();
 window.addEventListener('resize', resizeCanvas);
+window.addEventListener('orientationchange', () => { setTimeout(resizeCanvas, 120); });
 
 // ── Constants ─────────────────────────────────────────────────────────
 const TARGET_FPS = 60;
@@ -429,7 +499,85 @@ specialBtn.addEventListener('touchstart', e => {
   if (STATE === 'playing') triggerWeaponAbility();
 }, { passive: false });
 
-// ── Input ─────────────────────────────────────────────────────────────
+// ── Canvas touch handler (menu navigation + gameplay) ─────────────────
+CV.addEventListener('touchstart', e => {
+  e.preventDefault();
+  SoundManager.init();
+  const r = CV.getBoundingClientRect();
+  const t = e.changedTouches[0];
+  const mx = (t.clientX - r.left) * (LW / r.width);
+  const my = (t.clientY - r.top) * (LH / r.height);
+  if (STATE === 'title') {
+    if (mx > LW/2-120 && mx < LW/2+120 && my > 261 && my < 317) { startGame(); return; }
+    if (mx > LW/2-110 && mx < LW/2+110 && my > 320 && my < 376) { openTrainingDungeon(); return; }
+    if (mx > LW/2-110 && mx < LW/2+110 && my > 382 && my < 438) { openSettings(); return; }
+    if (mx > LW/2-110 && mx < LW/2+110 && my > 444 && my < 500) { openAchievements(); return; }
+  } else if (STATE === 'settings') {
+    const eb = drawSettings._editBtn, rb = drawSettings._resetBtn;
+    if (eb && mx >= eb.x && mx <= eb.x+eb.w && my >= eb.y && my <= eb.y+eb.h) {
+      if (CTRL_EDIT_MODE) exitCtrlEditMode(); else enterCtrlEditMode(); return;
+    }
+    if (rb && mx >= rb.x && mx <= rb.x+rb.w && my >= rb.y && my <= rb.y+rb.h) { resetCtrlLayout(); return; }
+    STATE = 'title'; SETTINGS_SLIDE = 0;
+  } else if (STATE === 'achievements') { STATE = 'title'; ACHIEV_SLIDE = 0; }
+  else if (STATE === 'endcard') { STATE = 'title'; }
+  else if (STATE === 'cinematic') { ciAdvance(); }
+  else if (STATE === 'pause') { resumeGame(); }
+  else if (STATE === 'titlecinematic') { TC_skip(); }
+  else if (STATE === 'training') { TR_handleClick(mx, my); }
+}, { passive: false });
+
+// ── Load saved player speed ────────────────────────────────────────────
+(function() {
+  const saved = parseFloat(localStorage.getItem('db_player_speed'));
+  if (!isNaN(saved) && saved >= GAME_SPEED_MIN && saved <= GAME_SPEED_MAX) GAME_SPEED = saved;
+})();
+
+// ── In-game pause button ──────────────────────────────────────────────
+const ingamePauseBtn = document.getElementById('ingame-pause-btn');
+const ingameSpeedPanel = document.getElementById('ingame-speed-panel');
+const spResumeBtn = document.getElementById('sp-resume-btn');
+
+function _updateSpeedPanel() {
+  const btns = ingameSpeedPanel.querySelectorAll('.sp-btn');
+  btns.forEach(b => {
+    const v = parseFloat(b.dataset.spd);
+    b.classList.toggle('active', Math.abs(v - GAME_SPEED) < 0.01);
+  });
+}
+
+function _showIngamePause() {
+  ingamePauseBtn.style.display = 'flex';
+}
+function _hideIngamePause() {
+  ingamePauseBtn.style.display = 'none';
+  ingameSpeedPanel.style.display = 'none';
+}
+
+function _toggleSpeedPanel() {
+  const visible = ingameSpeedPanel.style.display === 'block';
+  ingameSpeedPanel.style.display = visible ? 'none' : 'block';
+  if (!visible) { _updateSpeedPanel(); pauseGame(); }
+}
+
+ingamePauseBtn.addEventListener('touchstart', e => { e.preventDefault(); e.stopPropagation(); _toggleSpeedPanel(); }, { passive: false });
+ingamePauseBtn.addEventListener('click', e => { e.stopPropagation(); _toggleSpeedPanel(); });
+
+spResumeBtn.addEventListener('touchstart', e => { e.preventDefault(); e.stopPropagation(); ingameSpeedPanel.style.display='none'; resumeGame(); }, { passive: false });
+spResumeBtn.addEventListener('click', e => { e.stopPropagation(); ingameSpeedPanel.style.display='none'; resumeGame(); });
+
+ingameSpeedPanel.querySelectorAll('.sp-btn').forEach(btn => {
+  function _setSpd(e) {
+    e.preventDefault(); e.stopPropagation();
+    const v = parseFloat(btn.dataset.spd);
+    setGameSpeed(v);
+    localStorage.setItem('db_player_speed', GAME_SPEED.toFixed(2));
+    GAME_MSG = '⚡ Speed ' + GAME_SPEED.toFixed(1) + '×'; GAME_MSG_TIMER = 1.5;
+    _updateSpeedPanel();
+  }
+  btn.addEventListener('touchstart', _setSpd, { passive: false });
+  btn.addEventListener('click', _setSpd);
+});
 const K = {};
 window.addEventListener('keydown', e => {
   SoundManager.init();
@@ -864,8 +1012,8 @@ function startGame() {
   loadLevel();           // builds world — STATE will be set by intro cinematic
   startIntroCinematic(); // triggers opening sequence; ends → STATE='playing'
 }
-function pauseGame() { if (STATE === 'playing') STATE = 'pause'; }
-function resumeGame() { if (STATE === 'pause') STATE = 'playing'; }
+function pauseGame() { if (STATE === 'playing') { STATE = 'pause'; ingameSpeedPanel.style.display='none'; } }
+function resumeGame() { if (STATE === 'pause') { STATE = 'playing'; ingameSpeedPanel.style.display='none'; } }
 function openSettings() { SETTINGS_SLIDE = 0; STATE = 'settings'; }
 function openAchievements() { ACHIEV_SLIDE = 0; ACHIEV_SCROLL = 0; STATE = 'achievements'; }
 
@@ -4536,12 +4684,13 @@ function loop(ts) {
   if(DFL>0) DFL=Math.max(0,DFL-DT);
 
   if(STATE==='title'){
-    drawTitle();
+    drawTitle(); _hideIngamePause();
   } else if(STATE==='titlecinematic'){
-    TC_tick(DT); TC_draw();
+    TC_tick(DT); TC_draw(); _hideIngamePause();
   } else if(STATE==='training'){
-    TR_tick(DT); TR_draw();
+    TR_tick(DT); TR_draw(); _hideIngamePause();
   } else if(STATE==='playing'){
+    _showIngamePause();
     const GDT = frozen ? 0 : DT * GAME_SPEED;
     if(!frozen){tickPlayer(GDT);tickENE(GDT);tickTraps(GDT);tickSanity(GDT);if(LV===10)tickBoss(GDT);}
     tickPRT(GDT); tickSlashTrails(GDT); tickProjectiles(GDT); tickAchievToasts(DT);
@@ -4554,15 +4703,17 @@ function loop(ts) {
     if(P.san<40){const s=(40-P.san)/40;const vg=CX.createRadialGradient(LW/2,LH/2,LW*.13,LW/2,LH/2,LW*.72);vg.addColorStop(0,'transparent');vg.addColorStop(1,`rgba(80,0,120,${s*.62})`);CX.fillStyle=vg;CX.fillRect(0,0,LW,LH);}
     if(FADE>0){CX.fillStyle=`rgba(0,0,0,${FADE})`;CX.fillRect(0,0,LW,LH);}
   } else if(STATE==='cinematic'){
+    _showIngamePause();
     tickCI(DT); drawCI(); drawHUD();
   } else if(STATE==='endcard'){
-    drawEnd();
+    drawEnd(); _hideIngamePause();
   } else if(STATE==='pause'){
+    _showIngamePause();
     drawWorld(); drawHUD(); drawPause();
   } else if(STATE==='settings'){
-    drawTitle(); drawSettings();
+    drawTitle(); drawSettings(); _hideIngamePause();
   } else if(STATE==='achievements'){
-    drawTitle(); drawAchievPanel();
+    drawTitle(); drawAchievPanel(); _hideIngamePause();
   }
 
   CX.restore();
