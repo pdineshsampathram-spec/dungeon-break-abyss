@@ -10,8 +10,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{width:100%;height:100%;overflow:hidden;background:#000;touch-action:none}
-body{display:flex;align-items:center;justify-content:center}
-#c{display:block;cursor:pointer;image-rendering:auto;position:fixed}
+body{display:block;position:fixed;inset:0;}
+#c{display:block;cursor:pointer;image-rendering:auto;position:fixed;top:0;left:0;width:100vw;height:100vh;touch-action:none;}
 #touch-overlay{position:fixed;inset:0;pointer-events:none;z-index:50;display:none}
 #joy-zone{position:absolute;pointer-events:all;touch-action:none}
 #joy-bg{position:absolute;inset:0;border-radius:50%;background:rgba(201,168,76,.1);border:2px solid rgba(201,168,76,.22)}
@@ -142,14 +142,48 @@ CV.style.touchAction = 'none';
   checkOrientation();
 })();
 
+// ── Canvas scaling — DPR-aware fullscreen ─────────────────────────────
+// The logical game coordinate space remains LW×LH (896×640).
+// We scale the CSS display to fill the viewport while keeping aspect ratio,
+// and use setTransform to handle device pixel ratio for crisp rendering.
+let _canvasScale = 1; // CSS pixels per logical pixel (used to map touch→game coords)
+
 function resizeCanvas() {
+  const dpr = window.devicePixelRatio || 1;
   const sw = window.innerWidth, sh = window.innerHeight;
+  // Fit game inside viewport maintaining aspect ratio
   const scale = Math.min(sw / LW, sh / LH);
+  _canvasScale = scale;
   const cw = Math.floor(LW * scale), ch = Math.floor(LH * scale);
-  CV.style.width = cw + 'px'; CV.style.height = ch + 'px';
-  CV.style.left = Math.floor((sw - cw) / 2) + 'px';
-  CV.style.top = Math.floor((sh - ch) / 2) + 'px';
+  const offX = Math.floor((sw - cw) / 2), offY = Math.floor((sh - ch) / 2);
+  // Physical pixel dimensions
+  CV.width  = cw * dpr;
+  CV.height = ch * dpr;
+  CV.style.width  = cw + 'px';
+  CV.style.height = ch + 'px';
+  CV.style.left = offX + 'px';
+  CV.style.top  = offY + 'px';
+  // Apply DPR transform so all draw calls use logical coordinates
+  CX.setTransform(dpr, 0, 0, dpr, 0, 0);
+  // Re-scale to map logical LW×LH → cw×ch physical CSS pixels
+  // (divide by scale to go from LW→cw space back to our game's LW space)
+  CX.setTransform(dpr * scale / LW * LW, 0, 0, dpr * scale / LH * LH, 0, 0);
+  // Simpler: just use scale factor relative to LW/LH
+  CX.setTransform(dpr, 0, 0, dpr, 0, 0);
+  // Patch: game draws at LW×LH, canvas is cw×ch CSS pixels at scale.
+  // So we scale CX by (cw/LW) which equals _canvasScale.
+  CX.setTransform(dpr * _canvasScale, 0, 0, dpr * _canvasScale, 0, 0);
 }
+
+// Helper: convert a CSS clientX/Y (relative to canvas rect) → game coords
+function _cssToGame(clientX, clientY) {
+  const r = CV.getBoundingClientRect();
+  return {
+    mx: (clientX - r.left) / _canvasScale,
+    my: (clientY - r.top)  / _canvasScale
+  };
+}
+
 resizeCanvas();
 window.addEventListener('resize', resizeCanvas);
 window.addEventListener('orientationchange', () => { setTimeout(resizeCanvas, 120); });
@@ -503,10 +537,8 @@ specialBtn.addEventListener('touchstart', e => {
 CV.addEventListener('touchstart', e => {
   e.preventDefault();
   SoundManager.init();
-  const r = CV.getBoundingClientRect();
   const t = e.changedTouches[0];
-  const mx = (t.clientX - r.left) * (LW / r.width);
-  const my = (t.clientY - r.top) * (LH / r.height);
+  const { mx, my } = _cssToGame(t.clientX, t.clientY);
   if (STATE === 'title') {
     if (mx > LW/2-120 && mx < LW/2+120 && my > 261 && my < 317) { startGame(); return; }
     if (mx > LW/2-110 && mx < LW/2+110 && my > 320 && my < 376) { openTrainingDungeon(); return; }
@@ -522,9 +554,22 @@ CV.addEventListener('touchstart', e => {
   } else if (STATE === 'achievements') { STATE = 'title'; ACHIEV_SLIDE = 0; }
   else if (STATE === 'endcard') { STATE = 'title'; }
   else if (STATE === 'cinematic') { ciAdvance(); }
-  else if (STATE === 'pause') { resumeGame(); }
+  else if (STATE === 'pause') {
+    // Check pause menu button hitboxes before generic resume
+    if (_handlePauseMenuTouch(mx, my)) return;
+    resumeGame();
+  }
   else if (STATE === 'titlecinematic') { TC_skip(); }
   else if (STATE === 'training') { TR_handleClick(mx, my); }
+  else if (STATE === 'playing' && ACTIVE_EVENT_CHOICE) {
+    // Event choice touch routing
+    const panW = 420, panH = 200;
+    const panX = LW/2 - panW/2, panY = LH/2 - panH/2 - 40;
+    if (mx >= panX+14 && mx <= panX+200 && my >= panY+72 && my <= panY+110) { resolveEventChoice(1); return; }
+    if (mx >= panX+220 && mx <= panX+406 && my >= panY+72 && my <= panY+110) { resolveEventChoice(2); return; }
+    // Dismiss if tapping outside
+    if (mx < panX || mx > panX+panW || my < panY || my > panY+panH) { ACTIVE_EVENT_CHOICE = null; }
+  }
 }, { passive: false });
 
 // ── Load saved player speed ────────────────────────────────────────────
@@ -631,9 +676,7 @@ function _achievMaxScroll() {
 }
 
 CV.addEventListener('click', e => {
-  const r = CV.getBoundingClientRect();
-  const mx = (e.clientX - r.left) * (LW / r.width);
-  const my = (e.clientY - r.top) * (LH / r.height);
+  const { mx, my } = _cssToGame(e.clientX, e.clientY);
   if (STATE === 'title') {
     if (mx > LW / 2 - 120 && mx < LW / 2 + 120 && my > 261 && my < 317) { startGame(); return; }
     if (mx > LW / 2 - 110 && mx < LW / 2 + 110 && my > 320 && my < 376) { openTrainingDungeon(); return; }
@@ -653,7 +696,7 @@ CV.addEventListener('click', e => {
   } else if (STATE === 'achievements') { STATE = 'title'; ACHIEV_SLIDE = 0; }
   else if (STATE === 'endcard') { STATE = 'title'; }
   else if (STATE === 'cinematic') { ciAdvance(); }
-  else if (STATE === 'pause') { resumeGame(); }
+  else if (STATE === 'pause') { if (!_handlePauseMenuTouch(mx, my)) resumeGame(); }
   else if (STATE === 'titlecinematic') { TC_skip(); }
   else if (STATE === 'training') { TR_handleClick(mx, my); }
 });
@@ -4027,13 +4070,81 @@ function drawTitle() {
   CX.fillText('Arrow Keys / WASD — Move    Space — Attack    Esc — Pause',LW/2,LH-15);
 }
 
+// ── Pause menu button registry ─────────────────────────────────────────
+const _pauseBtns = [];   // filled by drawPause each frame
+
+function _handlePauseMenuTouch(mx, my) {
+  for (const btn of _pauseBtns) {
+    if (mx >= btn.x && mx <= btn.x + btn.w && my >= btn.y && my <= btn.y + btn.h) {
+      btn.action(); return true;
+    }
+  }
+  return false;
+}
+
+function quitToMainMenu() {
+  // Safely reset to title — clears gameplay state without breaking anything
+  STATE = 'title';
+  ingameSpeedPanel.style.display = 'none';
+  TOUCH_DIR.x = 0; TOUCH_DIR.y = 0;
+  joyKnob.style.transform = 'translate(-50%,-50%)';
+  for (const k in K) K[k] = false;
+  SoundManager.updateMusicLayers(0);
+}
+
 function drawPause() {
-  CX.fillStyle='rgba(0,0,0,.6)'; CX.fillRect(0,0,LW,LH);
-  CX.save(); CX.shadowColor='#c9a84c'; CX.shadowBlur=20;
-  CX.fillStyle='#fde68a'; CX.font='bold 36px Cinzel,serif'; CX.textAlign='center'; CX.textBaseline='middle';
-  CX.fillText('PAUSED',LW/2,LH/2-20); CX.restore();
-  CX.fillStyle='rgba(148,163,184,.7)'; CX.font='14px Cinzel,serif'; CX.textAlign='center';
-  CX.fillText('Press Esc or click to resume',LW/2,LH/2+30);
+  // Dark overlay
+  CX.fillStyle = 'rgba(0,0,0,.72)';
+  CX.fillRect(0, 0, LW, LH);
+
+  const panW = 320, panH = 240;
+  const panX = LW / 2 - panW / 2, panY = LH / 2 - panH / 2;
+
+  // Panel background
+  CX.fillStyle = 'rgba(5,8,22,0.97)';
+  CX.strokeStyle = 'rgba(201,168,76,0.65)';
+  CX.lineWidth = 1.5;
+  roundRect(CX, panX, panY, panW, panH, 12); CX.fill(); CX.stroke();
+
+  // Title
+  CX.save();
+  CX.shadowColor = '#c9a84c'; CX.shadowBlur = 18;
+  CX.fillStyle = '#fde68a'; CX.font = 'bold 22px Cinzel,serif';
+  CX.textAlign = 'center'; CX.textBaseline = 'top';
+  CX.fillText('⏸ PAUSED', LW / 2, panY + 18);
+  CX.restore();
+
+  CX.fillStyle = 'rgba(71,85,105,.4)';
+  CX.fillRect(panX + 20, panY + 50, panW - 40, 1);
+
+  // Build buttons
+  _pauseBtns.length = 0;
+  const btnDefs = [
+    { label: '▶  RESUME GAME', col: '#22c55e', bg: 'rgba(34,197,94,0.18)', border: 'rgba(34,197,94,0.55)', action: resumeGame },
+    { label: '⚙  SETTINGS',    col: '#fde68a', bg: 'rgba(201,168,76,0.12)', border: 'rgba(201,168,76,0.45)', action: () => { STATE = 'settings'; SETTINGS_SLIDE = 0; } },
+    { label: '✕  QUIT TO MENU',col: '#f87171', bg: 'rgba(239,68,68,0.12)',  border: 'rgba(239,68,68,0.45)',  action: quitToMainMenu },
+  ];
+
+  btnDefs.forEach((def, i) => {
+    const bx = panX + 24, by = panY + 64 + i * 54;
+    const bw = panW - 48, bh = 42;
+
+    CX.fillStyle = def.bg;
+    CX.strokeStyle = def.border;
+    CX.lineWidth = 1.5;
+    roundRect(CX, bx, by, bw, bh, 8); CX.fill(); CX.stroke();
+
+    CX.fillStyle = def.col;
+    CX.font = 'bold 13px Cinzel,serif';
+    CX.textAlign = 'center'; CX.textBaseline = 'middle';
+    CX.fillText(def.label, bx + bw / 2, by + bh / 2);
+
+    _pauseBtns.push({ x: bx, y: by, w: bw, h: bh, action: def.action });
+  });
+
+  CX.fillStyle = 'rgba(71,85,105,.4)'; CX.font = '10px Cinzel,serif';
+  CX.textAlign = 'center'; CX.textBaseline = 'alphabetic';
+  CX.fillText('Esc to resume · click button to select', LW / 2, panY + panH - 10);
 }
 
 function drawSettings() {
@@ -6323,18 +6434,18 @@ window.addEventListener('keydown', e => {
   }
 });
 
-// Click handler for event choice UI
-CV.addEventListener('click', e => {
-  if (!ACTIVE_EVENT_CHOICE) return;
-  const r = CV.getBoundingClientRect();
-  const mx = (e.clientX - r.left) * (LW / r.width);
-  const my = (e.clientY - r.top) * (LH / r.height);
+// Click + touch handler for event choice UI
+function _handleEventChoiceInput(clientX, clientY) {
+  if (!ACTIVE_EVENT_CHOICE) return false;
+  const { mx, my } = _cssToGame(clientX, clientY);
   const panW = 420, panH = 200;
   const panX = LW / 2 - panW / 2, panY = LH / 2 - panH / 2 - 40;
-  // Button 1: panX+14, panY+72, 186×38
-  if (mx >= panX + 14 && mx <= panX + 200 && my >= panY + 72 && my <= panY + 110) resolveEventChoice(1);
-  // Button 2: panX+220, panY+72, 186×38
-  if (mx >= panX + 220 && mx <= panX + 406 && my >= panY + 72 && my <= panY + 110) resolveEventChoice(2);
+  if (mx >= panX + 14 && mx <= panX + 200 && my >= panY + 72 && my <= panY + 110) { resolveEventChoice(1); return true; }
+  if (mx >= panX + 220 && mx <= panX + 406 && my >= panY + 72 && my <= panY + 110) { resolveEventChoice(2); return true; }
+  return false;
+}
+CV.addEventListener('click', e => {
+  _handleEventChoiceInput(e.clientX, e.clientY);
 }, true); // capture phase so it fires before other click handlers
 
 // ─────────────────────────────────────────────────────────────────────
