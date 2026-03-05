@@ -121,6 +121,8 @@ Esc               → Pause
 
 ## 📷 Screenshots
 
+![Title](screenshots/title.png)
+
 ![Gameplay](screenshots/gameplay.png)
 
 ![Boss Fight](screenshots/boss.png)
