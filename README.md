@@ -118,23 +118,15 @@ Esc               → Pause
 
 ---
 
-# 📷 Screenshots
 
-Add screenshots inside a `screenshots` folder.
+## 📷 Screenshots
 
-Example:
-
-```text
-screenshots/gameplay.png
-screenshots/boss.png
-```
-
-Then display them:
-
-```markdown
 ![Gameplay](screenshots/gameplay.png)
+
 ![Boss Fight](screenshots/boss.png)
-```
+
+
+
 
 ---
 
