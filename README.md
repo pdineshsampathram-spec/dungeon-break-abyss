@@ -1,185 +1,92 @@
-# 🏰 Dungeon Break — Abyss Edition
+# Dungeon Break — Abyss Ascension Edition
 
 <p align="center">
-
-<img src="https://img.shields.io/badge/Engine-HTML5%20Canvas-orange?style=for-the-badge">
-<img src="https://img.shields.io/badge/Language-JavaScript-yellow?style=for-the-badge">
-<img src="https://img.shields.io/badge/Platform-Web-blue?style=for-the-badge">
-<img src="https://img.shields.io/badge/Status-Playable-success?style=for-the-badge">
-
+  <a href="https://pdineshsampathram-spec.github.io/dungeon-break-abyss/">
+    <img src="https://img.shields.io/badge/PLAY%20DUNGEON%20BREAK-Live%20Demo-6d35b5?style=for-the-badge" alt="Play Dungeon Break">
+  </a>
+  <img src="https://img.shields.io/badge/Engine-HTML5%20Canvas%202D-cc8b2f?style=for-the-badge" alt="HTML5 Canvas 2D">
+  <img src="https://img.shields.io/badge/Language-JavaScript-f1d45a?style=for-the-badge" alt="JavaScript">
+  <img src="https://img.shields.io/badge/Developer-Solo%20Project-5b7cce?style=for-the-badge" alt="Solo developer project">
 </p>
 
 <p align="center">
-
-### ⚔ A Dark Fantasy Dungeon Crawler Built with Pure JavaScript
-
-Explore procedurally generated dungeons, defeat dangerous enemies, collect relics, and face the terrifying **Abyss Warden**.
-
+  <em>A dark-fantasy pixel-art dungeon crawler about survival, sanity, ancient trials, and the choices waiting at the bottom of the Abyss.</em>
 </p>
 
----
-
-# 🎮 Play the Game
-
 <p align="center">
-
-<a href="https://pdineshsampathram-spec.github.io/dungeon-break-abyss/">
-<img src="https://img.shields.io/badge/PLAY%20THE%20GAME-%F0%9F%8E%AE-green?style=for-the-badge&logo=github">
-</a>
-
+  <strong><a href="https://pdineshsampathram-spec.github.io/dungeon-break-abyss/">▶ Play the live build</a></strong>
+  ·
+  <strong><a href="https://github.com/pdineshsampathram-spec/dungeon-break-abyss">Source repository</a></strong>
 </p>
 
 ---
 
-# ✨ Game Features
+## Screenshots
 
-### 🗺 Procedural Dungeon Generation
+> **Release checklist:** Replace the current images below with fresh screenshots from the final build before announcing the release. Capture the game canvas cleanly, without browser chrome, DevTools, debug overlays, automation banners, or test-only UI.
 
-Every dungeon level is randomly generated, ensuring **each run feels different**.
+| Main menu | Dungeon gameplay |
+|---|---|
+| ![Dungeon Break main menu](screenshots/title.png) | ![Dungeon Break gameplay](screenshots/gameplay.png) |
 
-### ⚔ Multiple Weapon Types
+| Boss encounter |
+|---|
+| ![Dungeon Break boss encounter](screenshots/boss.png) |
 
-Choose your combat style:
+## About the game
 
-* Sword
-* Axe
-* Dagger
-* Spear
-* Arcane Bow
+**Dungeon Break — Abyss Ascension Edition** is a browser-based dark-fantasy dungeon crawler built around a custom Canvas 2D game loop and pixel-art presentation. Guide Rowan through a ten-floor descent, manage health and sanity, collect weapons and souls, rescue survivors, and face the trials guarding the Abyss.
 
-Each weapon has unique attack mechanics.
+The game is developed as a solo project by **Dinesh Polimera**.
 
-### 👾 Enemy Variety
+## Core features
 
-Fight against multiple enemy types including:
+- **Ten-floor descent:** Explore dungeon environments and advance through increasingly dangerous trials.
+- **Distinct weapon styles:** Sword, Axe, Dagger, Spear/Trident, and Bow archetypes, with rarity and upgrade progression where supported by the deployed build.
+- **Boss encounters:** Face Gorgaroth, Malakor, and the Abyss Warden.
+- **Sanity and endings:** Sanity shapes the journey. The game includes the separate Shattered Mind outcome and the Hero, Betrayal, and Rampage Warden endings.
+- **Survivor rescue:** Find survivors and make rescue part of your run.
+- **Codex and memory archive:** Revisit lore, bestiary entries, and memories unlocked through play.
+- **Achievements and speedrunning:** Earn persistent deeds and pursue floor/run time records.
+- **Responsive controls:** Keyboard input on desktop and touch controls on supported mobile layouts.
+- **Custom pixel-art UI:** Abyss-stone, forged-metal, violet, cyan, and ember-gold visual styling.
 
-* Skeleton Warriors
-* Ghouls
-* Demons
-* Wraiths
+> **Version note:** The hosted GitHub Pages build may differ from the newest Antigravity development build. Only describe features that have been verified in the release actually being published.
 
-Enemies become stronger as you progress deeper into the abyss.
+## Controls
 
-### 👑 Boss Battle
+### Desktop
+Open the in-game **Survival Guide** for the authoritative keyboard mapping of the deployed version.
 
-Face the **Abyss Warden**, the ultimate guardian of the dungeon.
+### Mobile
+Use the on-screen D-pad and gameplay action buttons. Available actions depend on the active weapon and the deployed build. The in-game Survival Guide explains the current touch controls.
 
-### 🧠 Sanity System
+## Technology
 
-Your sanity affects the game outcome and can lead to **different endings**.
+- HTML5 Canvas 2D
+- JavaScript
+- Custom game loop and rendering systems
+- Procedural dungeon systems
+- Browser-based save/progression storage
 
-### 🏆 Achievement System
+## Run locally
 
-Unlock **20+ achievements** based on gameplay actions and secret endings.
+This repository contains a browser build. To preview it locally, serve the folder over HTTP rather than relying on direct-file loading if browser restrictions interfere with resources.
 
-### 📱 Mobile Support
-
-The game includes **mobile-friendly controls** with customizable layouts.
-
-### 🌫 Atmospheric Effects
-
-Dynamic lighting, particles, and dungeon ambience create a dark immersive environment.
-
----
-
-# 🏆 Achievements
-
-The game includes many unlockable achievements such as:
-
-| Achievement      | Description               |
-| ---------------- | ------------------------- |
-| 🩸 First Blood   | Kill your first enemy     |
-| 🛡 Savior        | Rescue survivors          |
-| ⚡ Speed Runner   | Finish a level quickly    |
-| 🧠 Sanity Keeper | Maintain high sanity      |
-| 🏹 Sharpshooter  | Kill enemies with the bow |
-| 👑 Boss Slayer   | Defeat the Abyss Warden   |
-
-Some achievements are **hidden** and tied to alternate endings.
-
----
-
-# 🎮 Controls
-
-## Desktop
-
-```text
-WASD / Arrow Keys → Move
-Space             → Attack
-Enter             → Confirm
-Esc               → Pause
+```bash
+python3 -m http.server 8080
 ```
 
-## Mobile
+Then open <http://localhost:8080>.
 
-* Virtual joystick for movement
-* Attack / action buttons
-* Customizable control layout
+## Developer
 
----
+**Dinesh Polimera** — solo game developer.
 
-
-## 📷 Screenshots
-
-![Title](screenshots/title.png)
-
-![Gameplay](screenshots/gameplay.png)
-
-![Boss Fight](screenshots/boss.png)
-
-
-
+- GitHub: [@pdineshsampathram-spec](https://github.com/pdineshsampathram-spec)
+- Repository: [dungeon-break-abyss](https://github.com/pdineshsampathram-spec/dungeon-break-abyss)
+- Live game: [Play Dungeon Break](https://pdineshsampathram-spec.github.io/dungeon-break-abyss/)
 
 ---
 
-# 🛠 Technologies Used
-
-* **HTML5 Canvas**
-* **Vanilla JavaScript**
-* **Custom Game Loop**
-* **Procedural Map Generation**
-* **LocalStorage Save System**
-
-No external libraries or engines were used.
-
----
-
-# 📂 Project Structure
-
-```
-dungeon-break-abyss
-│
-├── index.html
-├── README.md
-└── screenshots/
-    ├── gameplay.png
-    └── boss.png
-```
-
----
-
-# 🚀 Future Improvements
-
-Planned features:
-
-* More enemy types
-* Additional weapons
-* New dungeon biomes
-* More boss mechanics
-* Expanded achievement system
-
----
-
-# 👤 Author
-
-**Dinesh**
-
-Built as a personal project to explore **game development with pure JavaScript and HTML5 Canvas**.
-
----
-
-# ⭐ Support
-
-If you enjoyed the game, consider **starring the repository** ⭐
-It helps the project reach more developers.
-
+If you enjoy the game, consider starring the repository ⭐
